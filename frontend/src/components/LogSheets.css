@@ -1,0 +1,65 @@
+.log-sheets-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.log-sheets-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.log-sheets-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.export-btn {
+  padding: 0.5rem 1rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+}
+
+.export-btn:hover {
+  background: #5568d3;
+}
+
+.logs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.log-item {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 1rem;
+  background: #f9f9f9;
+}
+
+.log-date {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.log-miles {
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.log-image {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
