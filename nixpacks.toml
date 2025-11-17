@@ -1,0 +1,12 @@
+# nixpacks.toml — THIS IS THE KEY TO FIX "Python not found"
+[phases.setup]
+nixPkgs = ["python312", "nodejs_20"]
+
+[phases.install]
+cmds = []
+
+[phases.build]
+cmds = ["bash start.sh"]
+
+[start]
+cmd = "bash start.sh"
