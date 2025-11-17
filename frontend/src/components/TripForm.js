@@ -65,20 +65,27 @@ const TripForm = ({ onTripCreated }) => {
   }, [reverseGeocode]);
 
   const handleLocationRequest = (fieldName) => {
-    if (navigator.geolocation && locationPermission !== 'denied') {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          reverseGeocode(latitude, longitude, fieldName);
-        },
-        () => {
-          // User denied or error - show map picker
-          setShowLocationPicker(fieldName);
-        },
-        { timeout: 5000 }
-      );
+    // For current_location, try GPS first, then show map if it fails
+    if (fieldName === 'current_location') {
+      if (navigator.geolocation && locationPermission !== 'denied') {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            reverseGeocode(latitude, longitude, fieldName);
+          },
+          () => {
+            // User denied or error - show map picker
+            setShowLocationPicker(fieldName);
+          },
+          { timeout: 5000 }
+        );
+      } else {
+        // Show map picker directly
+        setShowLocationPicker(fieldName);
+      }
     } else {
-      // Show map picker directly
+      // For pickup_location and dropoff_location, always show map picker
+      // so user can visually select the location on the map
       setShowLocationPicker(fieldName);
     }
   };
