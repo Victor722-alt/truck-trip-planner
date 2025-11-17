@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
 from io import BytesIO
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend to avoid GUI issues
 import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -43,12 +45,18 @@ def get_route_distance(start_coords, end_coords):
                 ]
             }
             response = requests.post(url, json=body, headers=headers, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                distance_km = data['features'][0]['properties']['segments'][0]['distance'] / 1000
-                return distance_km * 0.621371  # Convert to miles
+            response.raise_for_status()  # Raises HTTPError for bad status codes
+            data = response.json()
+            distance_km = data['features'][0]['properties']['segments'][0]['distance'] / 1000
+            return distance_km * 0.621371  # Convert to miles
+        except requests.RequestException as e:
+            print(f"ORS API request error: {e}, using fallback")
+        except (KeyError, IndexError) as e:
+            print(f"ORS API response parsing error: {e}, using fallback")
+        except ValueError as e:
+            print(f"ORS API data validation error: {e}, using fallback")
         except Exception as e:
-            print(f"ORS API error: {e}, using fallback")
+            print(f"ORS API unexpected error: {e}, using fallback")
     
     # Fallback to geodesic distance
     return geodesic(start_coords, end_coords).miles

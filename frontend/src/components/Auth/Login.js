@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { FaUser, FaLock, FaSignInAlt, FaExclamationCircle } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 import API from '../../services/api';
 import './Auth.css';
 
@@ -15,9 +17,26 @@ const Login = () => {
     try {
       const response = await API.post('auth/login/', { username, password });
       localStorage.setItem('token', response.data.token);
-      navigate('/');
+      
+      await Swal.fire({
+        title: 'Welcome back!',
+        text: 'You have been successfully logged in.',
+        icon: 'success',
+        confirmButtonColor: '#3b82f6',
+        timer: 1500
+      });
+      
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      const errorMsg = err.response?.data?.error || 'Login failed';
+      setError(errorMsg);
+      
+      await Swal.fire({
+        title: 'Login Failed',
+        text: errorMsg,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
     }
   };
 
@@ -25,26 +44,46 @@ const Login = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Login</h2>
-        {error && <div className="error">{error}</div>}
+        {error && (
+          <div className="error">
+            <FaExclamationCircle /> {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit">Login</button>
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <div className="input-wrapper">
+              <FaUser className="input-icon" />
+              <input
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <div className="input-wrapper">
+              <FaLock className="input-icon" />
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+          <button type="submit">
+            <FaSignInAlt /> Login
+          </button>
         </form>
         <p>
-          Don't have an account? <a href="/register">Register</a>
+          Don't have an account? <Link to="/register">Register</Link>
         </p>
       </div>
     </div>

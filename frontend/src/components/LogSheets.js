@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import API from '../services/api';
 import './LogSheets.css';
@@ -24,25 +25,50 @@ const LogSheets = ({ tripId }) => {
     }
   };
 
-  const exportToPDF = () => {
-    if (logs.length === 0) return;
+  const exportToPDF = async () => {
+    if (logs.length === 0) {
+      await Swal.fire({
+        title: 'No Logs',
+        text: 'There are no log sheets to export.',
+        icon: 'info',
+        confirmButtonColor: '#3b82f6'
+      });
+      return;
+    }
 
-    const doc = new jsPDF();
-    logs.forEach((log, i) => {
-      if (i > 0) doc.addPage();
+    try {
+      const doc = new jsPDF();
+      logs.forEach((log, i) => {
+        if (i > 0) doc.addPage();
+        
+        // Add log image
+        try {
+          const img = new Image();
+          img.src = `data:image/png;base64,${log.image}`;
+          doc.addImage(img, 'PNG', 10, 10, 190, 100);
+        } catch (err) {
+          console.error('Error adding image:', err);
+          doc.text(`Log for ${log.date}`, 10, 20);
+          doc.text(`Miles: ${log.miles}`, 10, 30);
+        }
+      });
+      doc.save('truck-logs.pdf');
       
-      // Add log image
-      try {
-        const img = new Image();
-        img.src = `data:image/png;base64,${log.image}`;
-        doc.addImage(img, 'PNG', 10, 10, 190, 100);
-      } catch (err) {
-        console.error('Error adding image:', err);
-        doc.text(`Log for ${log.date}`, 10, 20);
-        doc.text(`Miles: ${log.miles}`, 10, 30);
-      }
-    });
-    doc.save('truck-logs.pdf');
+      await Swal.fire({
+        title: 'Success!',
+        text: 'Log sheets exported to PDF successfully.',
+        icon: 'success',
+        confirmButtonColor: '#3b82f6',
+        timer: 2000
+      });
+    } catch (err) {
+      await Swal.fire({
+        title: 'Error!',
+        text: 'Failed to export PDF. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+    }
   };
 
   if (loading) {

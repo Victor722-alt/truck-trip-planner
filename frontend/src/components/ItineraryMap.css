@@ -1,34 +1,44 @@
-.route-map-container {
-  background: white;
-  padding: 2.5rem;
+.itinerary-map-container {
+  width: 100%;
   border-radius: 12px;
+  overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
   border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
-.route-map-container .leaflet-container {
+.itinerary-map-container .leaflet-container {
   touch-action: pan-x pan-y;
 }
 
-.route-map-container h3 {
-  margin-bottom: 1.5rem;
-  color: #0f172a;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.route-map-placeholder {
-  padding: 3rem;
-  text-align: center;
-  background: #f8f9fa;
-  border-radius: 12px;
-  color: #666;
-  border: 1px solid #e2e8f0;
-  min-height: 400px;
+.map-loading,
+.map-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
+  padding: 3rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 1rem;
+}
+
+.map-placeholder {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.map-loading-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
 /* Custom Marker Styles */
@@ -97,27 +107,59 @@
 }
 
 @media (max-width: 768px) {
-  .route-map-container {
-    padding: 1.5rem;
+  .itinerary-map-container {
+    border-radius: 8px;
   }
 
-  .route-map-container h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-  }
-
-  .route-map-placeholder {
+  .map-loading,
+  .map-placeholder {
     padding: 2rem 1rem;
-    min-height: 300px;
+    font-size: 0.9rem;
+  }
+
+  .marker-pin {
+    width: 35px;
+    height: 35px;
+  }
+
+  .marker-pin::after {
+    width: 25px;
+    height: 25px;
+  }
+
+  .marker-number {
+    font-size: 14px;
+  }
+
+  .marker-label {
+    font-size: 11px;
+    padding: 3px 6px;
   }
 }
 
 @media (max-width: 480px) {
-  .route-map-container {
-    padding: 1rem;
+  .itinerary-map-container {
+    height: 300px !important;
   }
 
-  .route-map-container h3 {
-    font-size: 1.1rem;
+  .map-loading,
+  .map-placeholder {
+    padding: 1.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .marker-pin {
+    width: 30px;
+    height: 30px;
+  }
+
+  .marker-pin::after {
+    width: 22px;
+    height: 22px;
+  }
+
+  .marker-number {
+    font-size: 12px;
   }
 }
+

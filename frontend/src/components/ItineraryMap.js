@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import './RouteMap.css';
+import './ItineraryMap.css';
 
-// Fix for default marker icons in React Leaflet
+// Fix for default marker icons
 if (typeof window !== 'undefined' && L.Icon && L.Icon.Default && L.Icon.Default.prototype) {
   delete L.Icon.Default.prototype._getIconUrl;
   L.Icon.Default.mergeOptions({
@@ -46,6 +46,7 @@ function MapBounds({ coordinates }) {
 // Component to get route geometry from OpenRouteService with economical routing
 function RouteLine({ coordinates, apiKey }) {
   const [routeGeometry, setRouteGeometry] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (coordinates.length < 2) {
@@ -54,10 +55,12 @@ function RouteLine({ coordinates, apiKey }) {
     }
 
     const fetchRoute = async () => {
+      setLoading(true);
       try {
-        // Try OpenRouteService first (with API key)
+        // Always try to use OpenRouteService for actual road routes
+        // If no API key, we'll use OSRM (free alternative) or fallback
         if (apiKey && apiKey !== 'your_ors_key_here') {
-          const coords = coordinates.map(coord => [coord[1], coord[0]]);
+          const coords = coordinates.map(coord => [coord[1], coord[0]]); // [lon, lat]
           const response = await fetch(
             `https://api.openrouteservice.org/v2/directions/driving-car`,
             {
@@ -69,7 +72,7 @@ function RouteLine({ coordinates, apiKey }) {
               body: JSON.stringify({
                 coordinates: coords,
                 format: 'geojson',
-                preference: 'fastest', // Most economical for fuel
+                preference: 'fastest', // 'fastest' is typically most economical for fuel
                 geometry: true,
               }),
             }
@@ -79,8 +82,10 @@ function RouteLine({ coordinates, apiKey }) {
             const data = await response.json();
             if (data.features && data.features[0]) {
               const geometry = data.features[0].geometry.coordinates;
+              // Convert [lon, lat] to [lat, lon]
               const routeCoords = geometry.map(coord => [coord[1], coord[0]]);
               setRouteGeometry(routeCoords);
+              setLoading(false);
               return;
             }
           }
@@ -99,11 +104,12 @@ function RouteLine({ coordinates, apiKey }) {
               const geometry = data.routes[0].geometry.coordinates;
               const routeCoords = geometry.map(coord => [coord[1], coord[0]]);
               setRouteGeometry(routeCoords);
+              setLoading(false);
               return;
             }
           }
         } catch (osrmError) {
-          console.log('OSRM routing not available');
+          console.log('OSRM routing not available, using straight line');
         }
         
         // Final fallback to straight line
@@ -111,11 +117,17 @@ function RouteLine({ coordinates, apiKey }) {
       } catch (err) {
         console.error('Route fetching error:', err);
         setRouteGeometry(coordinates);
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchRoute();
   }, [coordinates, apiKey]);
+
+  if (loading) {
+    return null; // Don't show anything while loading
+  }
 
   if (!routeGeometry || routeGeometry.length < 2) {
     return null;
@@ -132,87 +144,127 @@ function RouteLine({ coordinates, apiKey }) {
   );
 }
 
-const RouteMap = ({ trip }) => {
+const ItineraryMap = ({ locations, height = '500px' }) => {
   const [coordinates, setCoordinates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (trip) {
-      const geocodeLocation = async (location) => {
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`
-          );
-          const data = await response.json();
-          if (data.length > 0) {
-            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-          }
-        } catch (err) {
-          console.error('Geocoding error:', err);
+    const geocodeLocation = async (location) => {
+      if (!location || location.trim() === '') return null;
+      
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}&limit=1`
+        );
+        const data = await response.json();
+        if (data.length > 0) {
+          return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
         }
-        return null;
-      };
+      } catch (err) {
+        console.error('Geocoding error:', err);
+      }
+      return null;
+    };
 
-      const loadCoordinates = async () => {
-        setLoading(true);
-        const coords = [];
-        
-        if (trip.current_location) {
-          const coord = await geocodeLocation(trip.current_location);
-          if (coord) coords.push({ coord, label: 'Current', number: 1, color: '#3b82f6', location: trip.current_location });
-        }
-        
-        if (trip.pickup_location) {
-          const coord = await geocodeLocation(trip.pickup_location);
-          if (coord) coords.push({ coord, label: 'Pickup', number: 2, color: '#10b981', location: trip.pickup_location });
-        }
-        
-        if (trip.dropoff_location) {
-          const coord = await geocodeLocation(trip.dropoff_location);
-          if (coord) coords.push({ coord, label: 'Dropoff', number: 3, color: '#ef4444', location: trip.dropoff_location });
-        }
-        
-        setCoordinates(coords);
-        setLoading(false);
-      };
+    const loadCoordinates = async () => {
+      setLoading(true);
+      const coords = [];
+      
+      if (locations.current_location) {
+        const coord = await geocodeLocation(locations.current_location);
+        if (coord) coords.push({ coord, label: 'Current', number: 1, color: '#3b82f6' });
+      }
+      
+      if (locations.pickup_location) {
+        const coord = await geocodeLocation(locations.pickup_location);
+        if (coord) coords.push({ coord, label: 'Pickup', number: 2, color: '#10b981' });
+      }
+      
+      if (locations.dropoff_location) {
+        const coord = await geocodeLocation(locations.dropoff_location);
+        if (coord) coords.push({ coord, label: 'Dropoff', number: 3, color: '#ef4444' });
+      }
+      
+      setCoordinates(coords);
+      setLoading(false);
+    };
 
-      loadCoordinates();
-    }
-  }, [trip]);
+    loadCoordinates();
+  }, [locations]);
 
-  if (!trip || loading) {
-    return <div className="route-map-placeholder">Loading map...</div>;
+  // Show map as soon as we have at least one location
+  if (coordinates.length === 0 && loading) {
+    return (
+      <div className="itinerary-map-container" style={{ height }}>
+        <div className="map-loading">Loading map...</div>
+      </div>
+    );
   }
 
-  if (coordinates.length === 0) {
-    return <div className="route-map-placeholder">Unable to load map data</div>;
+  // If no coordinates after loading, show placeholder only if no locations provided
+  if (coordinates.length === 0 && !loading) {
+    const hasAnyLocation = locations.current_location || locations.pickup_location || locations.dropoff_location;
+    if (!hasAnyLocation) {
+      return (
+        <div className="itinerary-map-container" style={{ height }}>
+          <div className="map-placeholder">
+            <p>Add locations to see your itinerary on the map</p>
+          </div>
+        </div>
+      );
+    }
+    // If locations provided but geocoding failed, still show map centered
+    return (
+      <div className="itinerary-map-container" style={{ height }}>
+        <MapContainer
+          center={[39.8283, -98.5795]}
+          zoom={4}
+          style={{ height: '100%', width: '100%', borderRadius: '12px' }}
+          zoomControl={true}
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          />
+          <div className="map-loading-overlay">
+            <p>Geocoding locations...</p>
+          </div>
+        </MapContainer>
+      </div>
+    );
   }
 
   const allCoords = coordinates.map(item => item.coord);
-  const center = allCoords[Math.floor(allCoords.length / 2)] || [39.8283, -98.5795];
+  // Center on first coordinate if only one, or middle if multiple
+  const center = allCoords.length > 0 
+    ? (allCoords.length === 1 ? allCoords[0] : allCoords[Math.floor(allCoords.length / 2)])
+    : [39.8283, -98.5795];
+  
+  // Default zoom based on number of points
+  const defaultZoom = allCoords.length === 1 ? 10 : 6;
+  
   const orsApiKey = process.env.REACT_APP_ORS_API_KEY || '';
 
   return (
-    <div className="route-map-container">
-      <h3>Route Map</h3>
+    <div className="itinerary-map-container" style={{ height }}>
       <MapContainer
         center={center}
-        zoom={6}
-        style={{ height: '500px', width: '100%', borderRadius: '12px' }}
+        zoom={defaultZoom}
+        style={{ height: '100%', width: '100%', borderRadius: '12px' }}
         zoomControl={true}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <MapBounds coordinates={allCoords} />
+        {allCoords.length > 1 && <MapBounds coordinates={allCoords} />}
         
-        {/* Route line */}
+        {/* Route line - show when we have 2+ locations */}
         {allCoords.length >= 2 && (
           <RouteLine coordinates={allCoords} apiKey={orsApiKey} />
         )}
         
-        {/* Markers */}
+        {/* Markers - show all available locations */}
         {coordinates.map((item, index) => (
           <Marker
             key={index}
@@ -221,7 +273,9 @@ const RouteMap = ({ trip }) => {
           >
             <Popup>
               <strong>{item.label}:</strong><br />
-              {item.location}
+              {item.label === 'Current' && locations.current_location}
+              {item.label === 'Pickup' && locations.pickup_location}
+              {item.label === 'Dropoff' && locations.dropoff_location}
             </Popup>
           </Marker>
         ))}
@@ -230,5 +284,5 @@ const RouteMap = ({ trip }) => {
   );
 };
 
-export default RouteMap;
+export default ItineraryMap;
 
