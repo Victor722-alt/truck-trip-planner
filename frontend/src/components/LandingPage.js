@@ -120,7 +120,7 @@ const LandingPage = () => {
 
       <footer className="landing-footer">
         <div className="container">
-          <p>&copy; 2024 Truck Trip Planner. All rights reserved.</p>
+          <p>&copy; 2025 Truck Trip Planner. All rights reserved.</p>
         </div>
       </footer>
     </div>
