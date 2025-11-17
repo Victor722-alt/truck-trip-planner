@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 echo "🚀 Starting Truck Trip Planner — Benin Edition (FMCSA-Compliant Logs)"
 echo "Time: $(date) | WAT: $(date -u +%Y-%m-%dT%H:%M:%SZ) | PWD: $(pwd)"
@@ -13,10 +12,18 @@ echo "✅ Python: $(python3 --version)"
 
 # ——— RUN MIGRATIONS ———
 echo "🗄️ Running migrations..."
-python3 manage.py migrate --noinput
+if python3 manage.py migrate --noinput; then
+    echo "✅ Migrations completed successfully"
+else
+    echo "⚠️  Migration failed, but continuing to start server..."
+fi
 
 # ——— START GUNICORN ———
 echo "✅ Starting Gunicorn on PORT ${PORT:-8000}..."
+echo "🔗 Server will be available at http://0.0.0.0:${PORT:-8000}"
+
+# Use exec to replace shell process and keep container running
+# This ensures gunicorn is PID 1 and receives signals properly
 exec gunicorn backend.wsgi:application \
   --name "trucklog-benin" \
   --bind "0.0.0.0:${PORT:-8000}" \
@@ -27,4 +34,6 @@ exec gunicorn backend.wsgi:application \
   --max-requests-jitter 100 \
   --log-level info \
   --access-logfile "-" \
-  --error-logfile "-"
+  --error-logfile "-" \
+  --capture-output \
+  --enable-stdio-inheritance
