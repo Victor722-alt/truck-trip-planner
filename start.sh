@@ -3,21 +3,33 @@ set -e
 
 echo "🚀 Starting Truck Trip Planner deployment..."
 
+# Detect Python executable
+if command -v python3 &> /dev/null; then
+    PYTHON=python3
+elif command -v python &> /dev/null; then
+    PYTHON=python
+else
+    echo "❌ Error: Python not found. Please ensure Python is installed."
+    exit 1
+fi
+
+echo "📌 Using Python: $PYTHON ($($PYTHON --version))"
+
 # Navigate to backend directory
 cd backend
 
 # Install Python dependencies
 echo "📦 Installing Python dependencies..."
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
+$PYTHON -m pip install --upgrade pip
+$PYTHON -m pip install -r requirements.txt
 
 # Run database migrations
 echo "🗄️  Running database migrations..."
-python manage.py migrate --noinput
+$PYTHON manage.py migrate --noinput
 
 # Collect static files
 echo "📁 Collecting static files..."
-python manage.py collectstatic --noinput
+$PYTHON manage.py collectstatic --noinput
 
 # Navigate to frontend directory and build
 echo "🏗️  Building React frontend..."
@@ -54,5 +66,5 @@ cd ../backend
 
 # Start Django server
 echo "✅ Starting Django server..."
-exec python manage.py runserver 0.0.0.0:${PORT:-8000}
+exec $PYTHON manage.py runserver 0.0.0.0:${PORT:-8000}
 
