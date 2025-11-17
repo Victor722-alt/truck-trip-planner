@@ -3,17 +3,65 @@ set -e
 
 echo "🚀 Starting Truck Trip Planner deployment..."
 
-# Detect Python executable
+# Debug: Show environment
+echo "🔍 Debugging environment..."
+echo "PATH: $PATH"
+echo "HOME: $HOME"
+echo "PWD: $(pwd)"
+
+# Detect Python executable - try multiple methods
+PYTHON=""
+
+# Method 1: Check command availability
 if command -v python3 &> /dev/null; then
     PYTHON=python3
 elif command -v python &> /dev/null; then
     PYTHON=python
-else
+fi
+
+# Method 2: Check common Python locations
+if [ -z "$PYTHON" ]; then
+    for py_path in \
+        "/usr/bin/python3" \
+        "/usr/local/bin/python3" \
+        "/opt/homebrew/bin/python3" \
+        "/usr/bin/python" \
+        "/usr/local/bin/python" \
+        "$HOME/.local/bin/python3" \
+        "$HOME/.local/bin/python"
+    do
+        if [ -f "$py_path" ] && [ -x "$py_path" ]; then
+            PYTHON="$py_path"
+            echo "📌 Found Python at: $py_path"
+            break
+        fi
+    done
+fi
+
+# Method 3: Use which/whereis if available
+if [ -z "$PYTHON" ]; then
+    if command -v which &> /dev/null; then
+        PYTHON=$(which python3 2>/dev/null || which python 2>/dev/null || echo "")
+    fi
+fi
+
+# Method 4: Check if there's a virtual environment
+if [ -z "$PYTHON" ] && [ -d "venv" ]; then
+    if [ -f "venv/bin/python" ]; then
+        PYTHON="venv/bin/python"
+        echo "📌 Using Python from venv"
+    fi
+fi
+
+# Final check
+if [ -z "$PYTHON" ] || ! $PYTHON --version &> /dev/null; then
     echo "❌ Error: Python not found. Please ensure Python is installed."
+    echo "💡 Tip: Railpack may need Python to be installed via buildpacks or environment variables."
     exit 1
 fi
 
-echo "📌 Using Python: $PYTHON ($($PYTHON --version))"
+echo "✅ Using Python: $PYTHON"
+$PYTHON --version
 
 # Navigate to backend directory
 cd backend
