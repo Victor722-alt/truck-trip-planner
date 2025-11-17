@@ -1,12 +1,12 @@
-# nixpacks.toml — THIS IS THE KEY TO FIX "Python not found"
+# nixpacks.toml — Installs Python 3.12 + Node 20 for Django/React
 [phases.setup]
 nixPkgs = ["python312", "nodejs_20"]
 
-[phases.install]
-cmds = []
-
 [phases.build]
-cmds = ["bash start.sh"]
+cmds = [
+  "cd frontend && npm ci && npm run build",
+  "cd backend && python3 manage.py collectstatic --noinput"
+]
 
 [start]
 cmd = "bash start.sh"
